@@ -1,1 +1,14 @@
-(* sample placeholder with lets *)
+(* Comentarios deben ignorarse. *)
+
+{
+import myToken
+}
+
+let digit = ['0'-'9']
+let letter = ['a'-'z' 'A'-'Z']
+let ident = letter (letter|digit)*
+
+rule gettoken =
+    [' ' '\t']  { return lexbuf }
+  | ident       { return ID }
+  | digit+      { return NUM }

@@ -1,1 +1,25 @@
-(* full example placeholder *)
+(* Header con varias lineas *)
+{
+from tokens import ID, NUM, PLUS, MINUS, TIMES, DIV
+}
+
+let ws = [' ' '\t' '\n']
+let digit = ['0'-'9']
+let letter = ['a'-'z' 'A'-'Z']
+let ident = letter (letter|digit)*
+
+rule gettoken =
+    ws                  { return lexbuf }
+  | ident               { return ID }
+  | digit+              { return NUM }
+  | '+'                 { return PLUS }
+  | '-'                 { return MINUS }
+  | '*'                 { return TIMES }
+  | '/'                 { return DIV }
+  | [^'0'-'9' 'a'-'z']  { return UNKNOWN }
+  | eof                 { raise Exception('EOF') }
+
+{
+def post():
+    return None
+}
