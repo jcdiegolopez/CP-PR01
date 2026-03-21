@@ -2,7 +2,10 @@ package com.yalex.regex.node;
 
 import java.util.Objects;
 
-public class OptionalNode implements RegexNode {
+/**
+ * Nodo que representa el operador opcional (regexp?), equivalente a (r | ε).
+ */
+public class OptionalNode extends RegexNode {
 
     private final RegexNode child;
 
@@ -12,5 +15,10 @@ public class OptionalNode implements RegexNode {
 
     public RegexNode getChild() {
         return child;
+    }
+
+    @Override
+    public String toString() {
+        return "OptionalNode(" + child + "?)";
     }
 }

@@ -2,7 +2,10 @@ package com.yalex.regex.node;
 
 import java.util.Objects;
 
-public class KleeneNode implements RegexNode {
+/**
+ * Nodo que representa la cerradura de Kleene (regexp*).
+ */
+public class KleeneNode extends RegexNode {
 
     private final RegexNode child;
 
@@ -12,5 +15,10 @@ public class KleeneNode implements RegexNode {
 
     public RegexNode getChild() {
         return child;
+    }
+
+    @Override
+    public String toString() {
+        return "KleeneNode(" + child + "*)";
     }
 }

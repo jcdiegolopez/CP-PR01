@@ -2,7 +2,10 @@ package com.yalex.regex.node;
 
 import java.util.Objects;
 
-public class PlusNode implements RegexNode {
+/**
+ * Nodo que representa la cerradura positiva (regexp+), equivalente a rr*.
+ */
+public class PlusNode extends RegexNode {
 
     private final RegexNode child;
 
@@ -12,5 +15,10 @@ public class PlusNode implements RegexNode {
 
     public RegexNode getChild() {
         return child;
+    }
+
+    @Override
+    public String toString() {
+        return "PlusNode(" + child + "+)";
     }
 }

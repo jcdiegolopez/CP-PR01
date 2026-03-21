@@ -2,7 +2,10 @@ package com.yalex.regex.node;
 
 import java.util.Objects;
 
-public class ConcatNode implements RegexNode {
+/**
+ * Nodo que representa la concatenación implícita de dos subexpresiones.
+ */
+public class ConcatNode extends RegexNode {
 
     private final RegexNode left;
     private final RegexNode right;
@@ -18,5 +21,10 @@ public class ConcatNode implements RegexNode {
 
     public RegexNode getRight() {
         return right;
+    }
+
+    @Override
+    public String toString() {
+        return "ConcatNode(" + left + " · " + right + ")";
     }
 }

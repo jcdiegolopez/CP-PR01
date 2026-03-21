@@ -14,212 +14,346 @@ import com.yalex.regex.node.DiffNode;
 import com.yalex.regex.node.KleeneNode;
 import com.yalex.regex.node.OptionalNode;
 import com.yalex.regex.node.PlusNode;
-import com.yalex.regex.node.ReferenceNode;
 import com.yalex.regex.node.RegexNode;
 import com.yalex.regex.node.WildcardNode;
 
+/**
+ * Parser recursivo descendente para expresiones regulares en formato YALex.
+ *
+ * <p>Gramática con precedencia (de menor a mayor):
+ * <pre>
+ *   expr    → altern
+ *   altern  → diff ("|" diff)*
+ *   diff    → concat ("#" concat)*
+ *   concat  → unary unary*
+ *   unary   → atom ("*" | "+" | "?")*
+ *   atom    → CHAR
+ *           | STRING          (expandido como concat de CharNodes)
+ *           | WILDCARD
+ *           | IDENTIFIER      (referencia a let → ReferenceNode, "eof" especial)
+ *           | "(" expr ")"
+ *           | CHAR_CLASS      (p.ej. [a-z0-9])
+ * </pre>
+ *
+ * <p>Punto de entrada estático:
+ * <pre>{@code
+ *   RegexNode ast = RegexParser.parse("digit+");
+ * }</pre>
+ */
 public class RegexParser {
 
     private RegexLexer lexer;
     private Token current;
     private Token previous;
 
-    public RegexNode parse(String source) {
-        Objects.requireNonNull(source, "source no puede ser null");
-        this.lexer = new RegexLexer(source);
-        this.current = lexer.nextToken();
-        this.previous = null;
-
-        RegexNode node = parseAlternation();
-        expect(TokenType.EOF, "se esperaba fin de regex");
-        return node;
+    // Constructor privado — uso solo a través de parse()
+    private RegexParser() {
     }
 
-    // Precedencia baja: |
+    // =========================================================================
+    // Punto de entrada estático
+    // =========================================================================
+
+    /**
+     * Parsea la regexp {@code pattern} y devuelve el AST raíz.
+     *
+     * @param pattern expresión regular en formato YALex (no null, no vacío)
+     * @return nodo raíz del AST
+     * @throws RegexParseException si la expresión tiene errores de sintaxis
+     */
+    public static RegexNode parse(String pattern) {
+        Objects.requireNonNull(pattern, "pattern no puede ser null");
+        if (pattern.isBlank()) {
+            throw new RegexParseException("pattern no puede estar vacio");
+        }
+        RegexParser p = new RegexParser();
+        p.lexer   = new RegexLexer(pattern);
+        p.current = p.lexer.nextToken();
+        p.previous = null;
+
+        RegexNode root = p.parseAlternation();
+        p.expect(TokenType.EOF, "se esperaba fin de expresion regular");
+        return root;
+    }
+
+    // =========================================================================
+    // Reglas gramaticales
+    // =========================================================================
+
+    /** altern → diff ("|" diff)* */
     private RegexNode parseAlternation() {
-        RegexNode left = parseConcatenation();
+        RegexNode left = parseDiff();
         while (match(TokenType.PIPE)) {
-            RegexNode right = parseConcatenation();
+            RegexNode right = parseDiff();
             left = new AlternNode(left, right);
         }
         return left;
     }
 
-    // Concatenacion implicita.
-    private RegexNode parseConcatenation() {
-        List<RegexNode> nodes = new ArrayList<>();
-        nodes.add(parseDifference());
-
-        while (canStartPrimary(current.type())) {
-            nodes.add(parseDifference());
-        }
-
-        RegexNode currentNode = nodes.get(0);
-        for (int i = 1; i < nodes.size(); i++) {
-            currentNode = new ConcatNode(currentNode, nodes.get(i));
-        }
-        return currentNode;
-    }
-
-    // Precedencia alta: #
-    private RegexNode parseDifference() {
-        RegexNode left = parseUnary();
-        while (match(TokenType.DIFF)) {
-            RegexNode right = parseUnary();
+    /** diff → concat ("#" concat)* */
+    private RegexNode parseDiff() {
+        RegexNode left = parseConcatenation();
+        while (match(TokenType.HASH)) {
+            RegexNode right = parseConcatenation();
             left = new DiffNode(left, right);
         }
         return left;
     }
 
-    // Operadores postfix: *, +, ?
+    /** concat → unary unary*  (concatenación implícita) */
+    private RegexNode parseConcatenation() {
+        RegexNode first = parseUnary();
+        if (!canStartAtom(current.type())) {
+            return first;
+        }
+        List<RegexNode> parts = new ArrayList<>();
+        parts.add(first);
+        while (canStartAtom(current.type())) {
+            parts.add(parseUnary());
+        }
+        // Construir árbol de ConcatNode asociado a la izquierda
+        RegexNode result = parts.get(0);
+        for (int i = 1; i < parts.size(); i++) {
+            result = new ConcatNode(result, parts.get(i));
+        }
+        return result;
+    }
+
+    /** unary → atom ("*" | "+" | "?")* */
     private RegexNode parseUnary() {
-        RegexNode node = parsePrimary();
+        RegexNode node = parseAtom();
         while (true) {
             if (match(TokenType.STAR)) {
                 node = new KleeneNode(node);
-                continue;
-            }
-            if (match(TokenType.PLUS)) {
+            } else if (match(TokenType.PLUS)) {
                 node = new PlusNode(node);
-                continue;
-            }
-            if (match(TokenType.QUESTION)) {
+            } else if (match(TokenType.QUESTION)) {
                 node = new OptionalNode(node);
-                continue;
+            } else {
+                break;
             }
-            break;
         }
         return node;
     }
 
-    private RegexNode parsePrimary() {
+    /**
+     * atom → CHAR | STRING | WILDCARD | IDENTIFIER | "(" expr ")" | CHAR_CLASS
+     */
+    private RegexNode parseAtom() {
         if (match(TokenType.LPAREN)) {
             RegexNode inner = parseAlternation();
-            expect(TokenType.RPAREN, "se esperaba ')' ");
+            expect(TokenType.RPAREN, "se esperaba ')' para cerrar grupo");
             return inner;
         }
+
+        if (match(TokenType.CHAR)) {
+            return new CharNode(previous.lexeme());
+        }
+
+        if (match(TokenType.STRING)) {
+            return expandString(previous.lexeme());
+        }
+
         if (match(TokenType.WILDCARD)) {
             return new WildcardNode();
         }
-        if (match(TokenType.CHAR)) {
-            return new CharNode(previous().lexeme());
-        }
-        if (match(TokenType.STRING)) {
-            return buildStringNode(previous().lexeme());
-        }
-        if (match(TokenType.CHAR_CLASS)) {
-            return parseCharClass(previous().lexeme());
-        }
+
         if (match(TokenType.IDENTIFIER)) {
-            String name = previous().lexeme();
+            String name = previous.lexeme();
             if ("eof".equals(name)) {
+                // El token EOF del lexer fuente se trata como un marcador especial
                 return new CharNode("EOF");
             }
-            return new ReferenceNode(name);
+            // Las referencias a 'let' deben expandirse por sustitución de texto
+            // ANTES de invocar RegexParser.parse(). Ver SyntaxTreeBuilder.
+            throw error("referencia no resuelta a let '" + name + "': "
+                    + "expande las definiciones let antes de parsear");
         }
-        throw error("token inesperado en regex: " + current.lexeme());
+
+        if (match(TokenType.CHAR_CLASS)) {
+            return parseCharClass(previous.lexeme());
+        }
+
+        throw error("token inesperado: '" + current.lexeme() + "' (tipo " + current.type() + ")"
+                + " en posición " + current.position());
     }
 
-    private RegexNode parseCharClass(String raw) {
+    // =========================================================================
+    // Parseo de clases de caracteres [...]
+    // =========================================================================
+
+    /**
+     * Parsea el contenido del bloque {@code [...]} ya tokenizado como CHAR_CLASS.
+     * El {@code raw} incluye los corchetes; p.ej. {@code "[a-z0-9]"}.
+     */
+    private CharClassNode parseCharClass(String raw) {
+        // Quita corchetes
         String body = raw.substring(1, raw.length() - 1);
         boolean negated = false;
-        int index = 0;
+        int i = 0;
+
         if (!body.isEmpty() && body.charAt(0) == '^') {
             negated = true;
-            index = 1;
+            i = 1;
         }
 
         List<String> entries = new ArrayList<>();
-        while (index < body.length()) {
-            String first = readClassSymbol(body, index);
-            index += symbolLength(body, index);
+        while (i < body.length()) {
+            String first = readClassSymbol(body, i);
+            i += classSymbolLength(body, i);
 
-            if (index + 1 < body.length() && body.charAt(index) == '-') {
-                index++;
-                String second = readClassSymbol(body, index);
-                index += symbolLength(body, index);
+            // Si el siguiente (sin salirse del string) es '-' seguido de otro símbolo → rango
+            if (i < body.length() && body.charAt(i) == '-' && i + 1 < body.length()) {
+                i++; // consume '-'
+                String second = readClassSymbol(body, i);
+                i += classSymbolLength(body, i);
                 entries.add(first + "-" + second);
-                continue;
+            } else {
+                entries.add(first);
             }
-            entries.add(first);
         }
 
+        if (entries.isEmpty()) {
+            throw error("clase de caracteres vacía: " + raw);
+        }
         return new CharClassNode(entries, negated);
     }
 
-    private String readClassSymbol(String body, int index) {
-        if (index >= body.length()) {
-            throw error("simbolo invalido en clase de caracteres");
+    /**
+     * Lee el símbolo en la posición {@code i} dentro del cuerpo de una clase.
+     * Soporta tres formas:
+     * <ul>
+     *   <li>{@code 'c'}   — char entre comillas simples (formato YALex normal)
+     *   <li>{@code '\n'}  — char escapado entre comillas simples
+     *   <li>{@code \n}   — escape sin comillas
+     *   <li>{@code c}    — carácter plano
+     * </ul>
+     */
+    private String readClassSymbol(String body, int i) {
+        if (i >= body.length()) {
+            throw error("símbolo inesperado al final de clase de caracteres");
         }
-        char c = body.charAt(index);
-        if (c == '\\') {
-            if (index + 1 >= body.length()) {
-                throw error("escape incompleto en clase de caracteres");
+        char c = body.charAt(i);
+
+        // Forma 'c' o '\n'
+        if (c == '\'') {
+            int j = i + 1;
+            if (j >= body.length()) throw error("char literal sin cierre en clase de caracteres");
+            String value;
+            if (body.charAt(j) == '\\') {
+                j++;
+                if (j >= body.length()) throw error("escape incompleto en char literal de clase");
+                value = mapEscapeInClass(body.charAt(j));
+                j++;
+            } else {
+                value = String.valueOf(body.charAt(j));
+                j++;
             }
-            return mapEscape(body.charAt(index + 1));
+            if (j >= body.length() || body.charAt(j) != '\'') {
+                throw error("char literal sin comilla de cierre en clase de caracteres");
+            }
+            return value;
         }
+
+        // Forma \n fuera de comillas
+        if (c == '\\') {
+            if (i + 1 >= body.length()) throw error("escape incompleto en clase de caracteres");
+            return mapEscapeInClass(body.charAt(i + 1));
+        }
+
+        // Char plano
         return String.valueOf(c);
     }
 
-    private int symbolLength(String body, int index) {
-        return body.charAt(index) == '\\' ? 2 : 1;
+    /**
+     * Devuelve cuántas posiciones ocupa el símbolo en la posición {@code i}
+     * dentro del cuerpo de una clase de caracteres.
+     */
+    private int classSymbolLength(String body, int i) {
+        if (i >= body.length()) return 0;
+        char c = body.charAt(i);
+        if (c == '\'') {
+            // 'x' → 3 chars, '\n' → 4 chars
+            int j = i + 1;
+            if (j < body.length() && body.charAt(j) == '\\') j += 2; else j++;
+            j++; // cierre '
+            return j - i;
+        }
+        return c == '\\' ? 2 : 1;
     }
 
-    private String mapEscape(char escaped) {
+    private String mapEscapeInClass(char escaped) {
         return switch (escaped) {
-            case 'n' -> "\n";
-            case 't' -> "\t";
-            case 'r' -> "\r";
+            case 'n'  -> "\n";
+            case 't'  -> "\t";
+            case 'r'  -> "\r";
             case '\\' -> "\\";
             case '\'' -> "'";
-            case '"' -> "\"";
-            default -> String.valueOf(escaped);
+            case '"'  -> "\"";
+            case ']'  -> "]";
+            case '-'  -> "-";
+            case '^'  -> "^";
+            default   -> String.valueOf(escaped);
         };
     }
 
-    private RegexNode buildStringNode(String value) {
+    // =========================================================================
+    // Expansión de string literal "abc" → concat de CharNodes
+    // =========================================================================
+
+    /**
+     * Expande la cadena {@code value} (ya sin comillas, con escapes resueltos)
+     * como una concatenación de {@link CharNode}s.
+     */
+    private RegexNode expandString(String value) {
         if (value.isEmpty()) {
-            throw error("string vacio no soportado");
+            throw error("string literal vacío no está soportado");
         }
-        RegexNode node = new CharNode(String.valueOf(value.charAt(0)));
-        for (int i = 1; i < value.length(); i++) {
-            node = new ConcatNode(node, new CharNode(String.valueOf(value.charAt(i))));
+        // Itera sobre los code points por si hay caracteres Unicode compuestos
+        List<String> chars = new ArrayList<>();
+        for (int i = 0; i < value.length(); ) {
+            int cp = value.codePointAt(i);
+            chars.add(new String(Character.toChars(cp)));
+            i += Character.charCount(cp);
         }
-        return node;
+        RegexNode result = new CharNode(chars.get(0));
+        for (int i = 1; i < chars.size(); i++) {
+            result = new ConcatNode(result, new CharNode(chars.get(i)));
+        }
+        return result;
     }
 
-    private boolean canStartPrimary(TokenType type) {
+    // =========================================================================
+    // Helpers del parser
+    // =========================================================================
+
+    /** Verifica si el tipo de token actual puede iniciar un átomo. */
+    private boolean canStartAtom(TokenType type) {
         return type == TokenType.LPAREN
-            || type == TokenType.WILDCARD
             || type == TokenType.CHAR
             || type == TokenType.STRING
-            || type == TokenType.CHAR_CLASS
-            || type == TokenType.IDENTIFIER;
+            || type == TokenType.WILDCARD
+            || type == TokenType.IDENTIFIER
+            || type == TokenType.CHAR_CLASS;
     }
 
+    /** Consume el token actual si coincide con {@code type}; retorna true si lo hizo. */
     private boolean match(TokenType type) {
-        if (current.type() != type) {
-            return false;
-        }
+        if (current.type() != type) return false;
         previous = current;
-        current = lexer.nextToken();
+        current  = lexer.nextToken();
         return true;
     }
 
-    private Token previous() {
-        if (previous == null) {
-            throw new IllegalStateException("no hay token previo disponible");
-        }
-        return previous;
-    }
-
+    /** Consume el token o lanza excepción. */
     private void expect(TokenType type, String message) {
         if (!match(type)) {
-            throw error(message + " en posicion " + current.position());
+            throw error(message + "; se encontró '" + current.lexeme()
+                    + "' (tipo " + current.type() + ") en posición " + current.position());
         }
     }
 
-    private IllegalArgumentException error(String message) {
-        return new IllegalArgumentException(message);
+    private RegexParseException error(String message) {
+        return new RegexParseException("Error de parseo en regexp: " + message);
     }
 }

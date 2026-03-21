@@ -2,7 +2,10 @@ package com.yalex.regex.node;
 
 import java.util.Objects;
 
-public class AlternNode implements RegexNode {
+/**
+ * Nodo que representa la alternativa ("|") entre dos subexpresiones.
+ */
+public class AlternNode extends RegexNode {
 
     private final RegexNode left;
     private final RegexNode right;
@@ -18,5 +21,10 @@ public class AlternNode implements RegexNode {
 
     public RegexNode getRight() {
         return right;
+    }
+
+    @Override
+    public String toString() {
+        return "AlternNode(" + left + " | " + right + ")";
     }
 }

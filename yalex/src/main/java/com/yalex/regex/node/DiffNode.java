@@ -2,7 +2,11 @@ package com.yalex.regex.node;
 
 import java.util.Objects;
 
-public class DiffNode implements RegexNode {
+/**
+ * Nodo que representa la diferencia de lenguajes (regexp1 # regexp2).
+ * Acepta cadenas que hacen match con left pero NO con right.
+ */
+public class DiffNode extends RegexNode {
 
     private final RegexNode left;
     private final RegexNode right;
@@ -18,5 +22,10 @@ public class DiffNode implements RegexNode {
 
     public RegexNode getRight() {
         return right;
+    }
+
+    @Override
+    public String toString() {
+        return "DiffNode(" + left + " # " + right + ")";
     }
 }

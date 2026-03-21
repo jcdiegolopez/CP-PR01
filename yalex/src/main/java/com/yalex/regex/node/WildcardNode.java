@@ -1,4 +1,15 @@
 package com.yalex.regex.node;
 
-public class WildcardNode implements RegexNode {
+/**
+ * Nodo que representa el wildcard "_" — acepta cualquier carácter del alfabeto.
+ */
+public class WildcardNode extends RegexNode {
+
+    public WildcardNode() {
+    }
+
+    @Override
+    public String toString() {
+        return "WildcardNode(_)";
+    }
 }
