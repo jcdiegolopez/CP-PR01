@@ -1,2 +1,7 @@
 target/
 output/*.py
+
+# Python bytecode / cache (never commit)
+__pycache__/
+*.py[cod]
+*$py.class
