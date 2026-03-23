@@ -21,15 +21,28 @@ public final class Main {
     }
 
     public static void main(String[] args) {
+        // Lanzar Interfaz Gráfica si no hay argumentos (TC-01)
+        if (args.length == 0) {
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                try {
+                    javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
+                } catch (Exception ignored) {} // Fallback silencioso
+                
+                com.yalex.gui.YalexGui view = new com.yalex.gui.YalexGui();
+                new com.yalex.gui.YalexController(view);
+                view.setVisible(true);
+            });
+            return;
+        }
+
+        // Ejecución en Consola / CLI Normal (TC-04)
         if (args.length == 1 && isHelp(args[0])) {
             System.out.print(usage());
             return;
         }
         try {
             ParsedCli cli = parseCli(args);
-            YalFile yal = new YalParser().parse(cli.input());
-            PythonCodeGen.generate(yal, cli.output());
-            System.out.println("Generado: " + cli.output().toAbsolutePath().normalize());
+            runGeneration(cli.input(), cli.output());
         } catch (IllegalArgumentException ex) {
             System.err.println(ex.getMessage());
             System.err.println();
@@ -38,7 +51,20 @@ public final class Main {
         } catch (IOException ex) {
             System.err.println(ex.getMessage());
             System.exit(1);
+        } catch (Exception ex) {
+            System.err.println("Error inesperado en CLI: " + ex.getMessage());
+            System.exit(1);
         }
+    }
+
+    /**
+     * Lógica central de ejecución, extraída para que la GUI no lance System.exit(1)
+     */
+    public static void runGeneration(Path input, Path output) throws IOException {
+        YalFile yal = new YalParser().parse(input);
+        PythonCodeGen.generate(yal, output);
+        System.out.println("¡Generador ejecutado con Éxito!");
+        System.out.println("Analizador en bruto: " + output.toAbsolutePath().normalize());
     }
 
     /**

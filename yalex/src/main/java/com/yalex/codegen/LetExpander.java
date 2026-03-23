@@ -20,15 +20,47 @@ public final class LetExpander {
         if (lets == null || lets.isEmpty()) {
             return pattern;
         }
-        List<LetDefinition> sorted = new ArrayList<>(lets);
-        sorted.sort(Comparator.comparingInt((LetDefinition ld) -> ld.getName().length()).reversed());
+
+        // 1. Resolver dependencias cruzadas entre los propios 'let'
+        List<LetDefinition> sortedByDescLength = new ArrayList<>(lets);
+        sortedByDescLength.sort(Comparator.comparingInt((LetDefinition ld) -> ld.getName().length()).reversed());
+
+        List<LetDefinition> resolvedLets = new ArrayList<>();
+        for (LetDefinition ld : lets) {
+            String def = ld.getRegex().trim();
+            boolean changed = true;
+            int pass = 0;
+            // Evaluamos hasta que ya no haya variables no-primitivas dentro del 'let'
+            while (changed && pass < 100) {
+                changed = false;
+                for (LetDefinition other : sortedByDescLength) {
+                    if (other.getName().equals(ld.getName())) {
+                        continue; // Evitar el auto-reemplazo recursivo
+                    }
+                    String current = replaceIdentifier(def, other.getName(), "(" + other.getRegex().trim() + ")");
+                    if (!current.equals(def)) {
+                        def = current;
+                        changed = true;
+                    }
+                }
+                pass++;
+            }
+            if (pass >= 100) {
+                throw new IllegalArgumentException("Lazo infinito detectado en variables let (dependencias circulares): " + ld.getName());
+            }
+            resolvedLets.add(new LetDefinition(ld.getName(), def));
+        }
+
+        // 2. Ahora que están resueltas al 100%, aplicamos al patrón principal
+        resolvedLets.sort(Comparator.comparingInt((LetDefinition ld) -> ld.getName().length()).reversed());
         String result = pattern;
-        for (LetDefinition ld : sorted) {
+        for (LetDefinition ld : resolvedLets) {
             String name = ld.getName();
             String def = ld.getRegex().trim();
             String replacement = "(" + def + ")";
             result = replaceIdentifier(result, name, replacement);
         }
+        
         return result;
     }
 
