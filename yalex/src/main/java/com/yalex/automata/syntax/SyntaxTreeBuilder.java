@@ -9,6 +9,7 @@ import com.yalex.regex.node.CharClassNode;
 import com.yalex.regex.node.CharNode;
 import com.yalex.regex.node.ConcatNode;
 import com.yalex.regex.node.DiffNode;
+import com.yalex.regex.node.EpsilonRegexNode;
 import com.yalex.regex.node.KleeneNode;
 import com.yalex.regex.node.OptionalNode;
 import com.yalex.regex.node.PlusNode;
@@ -52,6 +53,14 @@ public class SyntaxTreeBuilder {
     private static final class EpsilonNode extends RegexNode {
         static final EpsilonNode INSTANCE = new EpsilonNode();
         private EpsilonNode() {}
+    }
+
+    /**
+     * Indica si el nodo es el marcador interno de ε usado en {@code r? → r | ε}.
+     * Expuesto para análisis ({@code NullableFirstLast}) fuera de este builder.
+     */
+    public static boolean isEpsilonRegex(RegexNode node) {
+        return node instanceof EpsilonNode;
     }
 
     // =========================================================================
@@ -132,6 +141,9 @@ public class SyntaxTreeBuilder {
         } else if (node instanceof DiffNode d) {
             // DiffNode se preserva; la diferencia se resuelve en el análisis posterior
             return new DiffNode(expand(d.getLeft()), expand(d.getRight()));
+
+        } else if (node instanceof EpsilonRegexNode) {
+            return EpsilonNode.INSTANCE;
 
         } else if (node instanceof EpsilonNode) {
             return node;

@@ -11,6 +11,7 @@ import com.yalex.regex.node.CharClassNode;
 import com.yalex.regex.node.CharNode;
 import com.yalex.regex.node.ConcatNode;
 import com.yalex.regex.node.DiffNode;
+import com.yalex.regex.node.EpsilonRegexNode;
 import com.yalex.regex.node.KleeneNode;
 import com.yalex.regex.node.OptionalNode;
 import com.yalex.regex.node.PlusNode;
@@ -163,6 +164,10 @@ public class RegexParser {
             if ("eof".equals(name)) {
                 // El token EOF del lexer fuente se trata como un marcador especial
                 return new CharNode("EOF");
+            }
+            // ε (U+03B5) o "epsilon": cadena vacía en la especificación (no es un let)
+            if ("ε".equals(name) || "epsilon".equalsIgnoreCase(name)) {
+                return EpsilonRegexNode.INSTANCE;
             }
             // Las referencias a 'let' deben expandirse por sustitución de texto
             // ANTES de invocar RegexParser.parse(). Ver SyntaxTreeBuilder.
