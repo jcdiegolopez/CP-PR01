@@ -1,0 +1,31 @@
+(* Ejemplo de complejidad media *)
+
+let delimitador = [' ''\t''\n']
+let espacioEnBlanco = delimitador+
+let digito = ['0'-'9']
+let numero = '-'?digito+
+let letra = ['a'-'z''A'-'Z']
+let identificador = letra(letra|digito)*
+let string = '"'(_)*'"'
+
+let lbrace = '{'
+let rbrace = '}'
+
+rule tokens =
+    espacioEnBlanco { return 'WHITESPACE' }
+  | "if"            { print("Palabra reservada: if\n") }
+  | "else"          { print("Palabra reservada: else\n") }
+  | "while"         { print("Palabra reservada: while\n") }
+  | identificador   { print("Identificador\n") }
+  | numero          { print("Número\n") }
+  | string          { print("Cadena de texto\n") }
+  | '+'             { print("Operador de suma\n") }
+  | '-'             { print("Operador de resta\n") }
+  | '*'             { print("Operador de multiplicación\n") }
+  | '/'             { print("Operador de división\n") }
+  | '='             { print("Operador de asignación\n") }
+  | "=="            { print("Operador de igualdad\n") }
+  | '('             { print("Paréntesis izquierdo\n") }
+  | ')'             { print("Paréntesis derecho\n") }
+  | lbrace          { print("Llave izquierda\n") }
+  | rbrace          { print("Llave derecha\n") }

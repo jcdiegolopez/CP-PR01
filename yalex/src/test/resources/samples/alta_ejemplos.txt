@@ -1,0 +1,30 @@
+Archivo: alta.yal
+
+==== ENTRADA QUE DEBERÍA ACEPTAR ====
+public class Prueba {
+    int _var1 = -15.5e+2;
+    // Esto es un comentario
+    return true; /* fin de bloque */
+}
+
+==== TOKENS QUE DEBERÍA RETORNAR (imprimir) ====
+Reservada: PUBLIC
+Reservada: CLASS
+ID
+LBRACE
+Reservada: TYPE_INT
+ID
+OP_ASSIGN
+NUMERO
+PUNTO_Y_COMA
+Reservada: RETURN
+Reservada: BOOLEAN_TRUE
+PUNTO_Y_COMA
+RBRACE
+(Las directivas de comentario y espacios en blanco las consume sin imprimir si su acción es un retorno vacío o return 'TOKEN', pero no hacen print como las otras reglas funcionales).
+
+==== ENTRADA QUE NO DEBERÍA ACEPTAR ====
+int test = $dinero;
+
+==== ERROR QUE DEBERÍA REPORTAR ====
+LexError: error léxico en posición 11 (el símbolo '$' no es reconocido ni como operador, ni literal de cadena, ni como parte inicial de un identificador porque la regla dicta que los identificadores deben iniciar con letra, causando pánico).

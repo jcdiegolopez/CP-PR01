@@ -1,0 +1,19 @@
+Archivo: baja.yal
+
+==== ENTRADA QUE DEBERÍA ACEPTAR ====
+a = 5 + 10 * temp
+
+==== TOKENS QUE DEBERÍA RETORNAR (imprimir) ====
+Identificador
+Operador de asignación
+Número
+Operador de suma
+Número
+Operador de multiplicación
+Identificador
+
+==== ENTRADA QUE NO DEBERÍA ACEPTAR ====
+a = 5 ! 10
+
+==== ERROR QUE DEBERÍA REPORTAR ====
+LexError: error léxico (al no existir una regla o patrón que contemple el carácter '!', el analizador no podrá transicionar desde el estado inicial al procesarlo o fallará en consumir el lexema más largo).

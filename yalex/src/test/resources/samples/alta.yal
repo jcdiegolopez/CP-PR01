@@ -1,0 +1,53 @@
+(* Ejemplo de complejidad alta: lenguaje de programación completo *)
+
+let delimitador = [' ''\t''\n']
+let espacioEnBlanco = delimitador+
+let digito = ['0'-'9']
+let decimal = digito+('.'digito+)?
+let exp = ['E''e']['+''-']?digito+
+let numeroFlotante = '-'?decimal(exp)?
+let letra = ['a'-'z''A'-'Z']
+let identificador = (letra|'_')(letra|digito|'_')*
+let stringLiteral = '"'(_)*'"' | '\''(_)*'\''
+let comentarioLin = "//"(_)*'\n'
+let comentarioMult = "/*"(_)*"*/"
+
+let lbrace = '{'
+let rbrace = '}'
+
+rule tokens =
+    espacioEnBlanco { return 'WHITESPACE' }
+  | comentarioLin   { return 'COMMENT' }
+  | comentarioMult  { return 'COMMENT' }
+  | "true"          { print("Reservada: BOOLEAN_TRUE\n") }
+  | "false"         { print("Reservada: BOOLEAN_FALSE\n") }
+  | "class"         { print("Reservada: CLASS\n") }
+  | "public"        { print("Reservada: PUBLIC\n") }
+  | "return"        { print("Reservada: RETURN\n") }
+  | "void"          { print("Reservada: VOID\n") }
+  | "int"           { print("Reservada: TYPE_INT\n") }
+  | "float"         { print("Reservada: TYPE_FLOAT\n") }
+  | identificador   { print("ID\n") }
+  | numeroFlotante  { print("NUMERO\n") }
+  | stringLiteral   { print("STRING\n") }
+  | "&&"            { print("OP_AND\n") }
+  | "||"            { print("OP_OR\n") }
+  | "=="            { print("OP_EQ\n") }
+  | "!="            { print("OP_NEQ\n") }
+  | "<="            { print("OP_LTE\n") }
+  | ">="            { print("OP_GTE\n") }
+  | '<'             { print("OP_LT\n") }
+  | '>'             { print("OP_GT\n") }
+  | '+'             { print("OP_PLUS\n") }
+  | '-'             { print("OP_MINUS\n") }
+  | '*'             { print("OP_MULT\n") }
+  | '/'             { print("OP_DIV\n") }
+  | '='             { print("OP_ASSIGN\n") }
+  | ';'             { print("PUNTO_Y_COMA\n") }
+  | ','             { print("COMA\n") }
+  | '('             { print("LPAREN\n") }
+  | ')'             { print("RPAREN\n") }
+  | lbrace          { print("LBRACE\n") }
+  | rbrace          { print("RBRACE\n") }
+  | '['             { print("LBRACKET\n") }
+  | ']'             { print("RBRACKET\n") }

@@ -1,0 +1,31 @@
+Archivo: media.yal
+
+==== ENTRADA QUE DEBERÍA ACEPTAR ====
+while (x == 10) {
+    x = x + 1
+    msg = "hola"
+}
+
+==== TOKENS QUE DEBERÍA RETORNAR (imprimir) ====
+Palabra reservada: while
+Paréntesis izquierdo
+Identificador
+Operador de igualdad
+Número
+Paréntesis derecho
+Llave izquierda
+Identificador
+Operador de asignación
+Identificador
+Operador de suma
+Número
+Identificador
+Operador de asignación
+Cadena de texto
+Llave derecha
+
+==== ENTRADA QUE NO DEBERÍA ACEPTAR ====
+if (x @ 10)
+
+==== ERROR QUE DEBERÍA REPORTAR ====
+LexError: error léxico (al llegar al arroba '@', el analizador léxico no encontrará ninguna regla capaz de consumirlo en este estado, y levantará una excepción deteniendo el análisis de los tokens restantes).
