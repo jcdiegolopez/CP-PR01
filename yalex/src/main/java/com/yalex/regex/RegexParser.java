@@ -21,7 +21,9 @@ import com.yalex.regex.node.WildcardNode;
 /**
  * Parser recursivo descendente para expresiones regulares en formato YALex.
  *
- * <p>Gramática con precedencia (de menor a mayor):
+ * <p>
+ * Gramática con precedencia (de menor a mayor):
+ * 
  * <pre>
  *   expr    → altern
  *   altern  → diff ("|" diff)*
@@ -36,9 +38,11 @@ import com.yalex.regex.node.WildcardNode;
  *           | CHAR_CLASS      (p.ej. [a-z0-9])
  * </pre>
  *
- * <p>Punto de entrada estático:
+ * <p>
+ * Punto de entrada estático:
+ * 
  * <pre>{@code
- *   RegexNode ast = RegexParser.parse("digit+");
+ * RegexNode ast = RegexParser.parse("digit+");
  * }</pre>
  */
 public class RegexParser {
@@ -68,7 +72,7 @@ public class RegexParser {
             throw new RegexParseException("pattern no puede estar vacio");
         }
         RegexParser p = new RegexParser();
-        p.lexer   = new RegexLexer(pattern);
+        p.lexer = new RegexLexer(pattern);
         p.current = p.lexer.nextToken();
         p.previous = null;
 
@@ -101,7 +105,7 @@ public class RegexParser {
         return left;
     }
 
-    /** concat → unary unary*  (concatenación implícita) */
+    /** concat → unary unary* (concatenación implícita) */
     private RegexNode parseConcatenation() {
         RegexNode first = parseUnary();
         if (!canStartAtom(current.type())) {
@@ -207,7 +211,8 @@ public class RegexParser {
             String first = readClassSymbol(body, i);
             i += classSymbolLength(body, i);
 
-            // Si el siguiente (sin salirse del string) es '-' seguido de otro símbolo → rango
+            // Si el siguiente (sin salirse del string) es '-' seguido de otro símbolo →
+            // rango
             if (i < body.length() && body.charAt(i) == '-' && i + 1 < body.length()) {
                 i++; // consume '-'
                 String second = readClassSymbol(body, i);
@@ -228,10 +233,10 @@ public class RegexParser {
      * Lee el símbolo en la posición {@code i} dentro del cuerpo de una clase.
      * Soporta tres formas:
      * <ul>
-     *   <li>{@code 'c'}   — char entre comillas simples (formato YALex normal)
-     *   <li>{@code '\n'}  — char escapado entre comillas simples
-     *   <li>{@code \n}   — escape sin comillas
-     *   <li>{@code c}    — carácter plano
+     * <li>{@code 'c'} — char entre comillas simples (formato YALex normal)
+     * <li>{@code '\n'} — char escapado entre comillas simples
+     * <li>{@code \n} — escape sin comillas
+     * <li>{@code c} — carácter plano
      * </ul>
      */
     private String readClassSymbol(String body, int i) {
@@ -243,11 +248,13 @@ public class RegexParser {
         // Forma 'c' o '\n'
         if (c == '\'') {
             int j = i + 1;
-            if (j >= body.length()) throw error("char literal sin cierre en clase de caracteres");
+            if (j >= body.length())
+                throw error("char literal sin cierre en clase de caracteres");
             String value;
             if (body.charAt(j) == '\\') {
                 j++;
-                if (j >= body.length()) throw error("escape incompleto en char literal de clase");
+                if (j >= body.length())
+                    throw error("escape incompleto en char literal de clase");
                 value = mapEscapeInClass(body.charAt(j));
                 j++;
             } else {
@@ -262,7 +269,8 @@ public class RegexParser {
 
         // Forma \n fuera de comillas
         if (c == '\\') {
-            if (i + 1 >= body.length()) throw error("escape incompleto en clase de caracteres");
+            if (i + 1 >= body.length())
+                throw error("escape incompleto en clase de caracteres");
             return mapEscapeInClass(body.charAt(i + 1));
         }
 
@@ -275,12 +283,16 @@ public class RegexParser {
      * dentro del cuerpo de una clase de caracteres.
      */
     private int classSymbolLength(String body, int i) {
-        if (i >= body.length()) return 0;
+        if (i >= body.length())
+            return 0;
         char c = body.charAt(i);
         if (c == '\'') {
             // 'x' → 3 chars, '\n' → 4 chars
             int j = i + 1;
-            if (j < body.length() && body.charAt(j) == '\\') j += 2; else j++;
+            if (j < body.length() && body.charAt(j) == '\\')
+                j += 2;
+            else
+                j++;
             j++; // cierre '
             return j - i;
         }
@@ -289,16 +301,16 @@ public class RegexParser {
 
     private String mapEscapeInClass(char escaped) {
         return switch (escaped) {
-            case 'n'  -> "\n";
-            case 't'  -> "\t";
-            case 'r'  -> "\r";
+            case 'n' -> "\n";
+            case 't' -> "\t";
+            case 'r' -> "\r";
             case '\\' -> "\\";
             case '\'' -> "'";
-            case '"'  -> "\"";
-            case ']'  -> "]";
-            case '-'  -> "-";
-            case '^'  -> "^";
-            default   -> String.valueOf(escaped);
+            case '"' -> "\"";
+            case ']' -> "]";
+            case '-' -> "-";
+            case '^' -> "^";
+            default -> String.valueOf(escaped);
         };
     }
 
@@ -316,7 +328,7 @@ public class RegexParser {
         }
         // Itera sobre los code points por si hay caracteres Unicode compuestos
         List<String> chars = new ArrayList<>();
-        for (int i = 0; i < value.length(); ) {
+        for (int i = 0; i < value.length();) {
             int cp = value.codePointAt(i);
             chars.add(new String(Character.toChars(cp)));
             i += Character.charCount(cp);
@@ -335,18 +347,22 @@ public class RegexParser {
     /** Verifica si el tipo de token actual puede iniciar un átomo. */
     private boolean canStartAtom(TokenType type) {
         return type == TokenType.LPAREN
-            || type == TokenType.CHAR
-            || type == TokenType.STRING
-            || type == TokenType.WILDCARD
-            || type == TokenType.IDENTIFIER
-            || type == TokenType.CHAR_CLASS;
+                || type == TokenType.CHAR
+                || type == TokenType.STRING
+                || type == TokenType.WILDCARD
+                || type == TokenType.IDENTIFIER
+                || type == TokenType.CHAR_CLASS;
     }
 
-    /** Consume el token actual si coincide con {@code type}; retorna true si lo hizo. */
+    /**
+     * Consume el token actual si coincide con {@code type}; retorna true si lo
+     * hizo.
+     */
     private boolean match(TokenType type) {
-        if (current.type() != type) return false;
+        if (current.type() != type)
+            return false;
         previous = current;
-        current  = lexer.nextToken();
+        current = lexer.nextToken();
         return true;
     }
 

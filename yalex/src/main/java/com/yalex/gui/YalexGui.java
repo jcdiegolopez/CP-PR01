@@ -236,6 +236,27 @@ public class YalexGui extends JFrame {
         showOrUpdateReadOnlyTab("dfa:" + tabName, tabName, content);
     }
 
+    /**
+     * Muestra un tab con un panel gráfico interactivo del DFA combinado.
+     * Si ya existe un tab DFA-graph, lo reemplaza.
+     */
+    public void showDfaGraphTab(String tabName, DfaGraphPanel panel) {
+        String prefix = "dfagraph:";
+        for (int i = 0; i < editorTabs.getTabCount(); i++) {
+            if (editorTabs.getTitleAt(i).startsWith(prefix)) {
+                editorTabs.setComponentAt(i, panel);
+                setStyledTabTitle(i, prefix + tabName);
+                editorTabs.setSelectedIndex(i);
+                refreshTabContrast();
+                return;
+            }
+        }
+        editorTabs.addTab(prefix + tabName, panel);
+        setStyledTabTitle(editorTabs.getTabCount() - 1, prefix + tabName);
+        editorTabs.setSelectedIndex(editorTabs.getTabCount() - 1);
+        refreshTabContrast();
+    }
+
     private void showOrUpdateReadOnlyTab(String namePrefix, String fileName, String content) {
         for (int i = 0; i < editorTabs.getTabCount(); i++) {
             if (editorTabs.getTitleAt(i).startsWith(namePrefix)) {

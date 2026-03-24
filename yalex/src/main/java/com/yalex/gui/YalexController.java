@@ -1,11 +1,7 @@
 package com.yalex.gui;
 
 import com.yalex.Main;
-import com.yalex.automata.dfa.DFA;
-import com.yalex.automata.dfa.DirectDfaBuilder;
-import com.yalex.automata.minimization.DFAMinimizer;
-import com.yalex.automata.syntax.SyntaxTree;
-import com.yalex.automata.syntax.SyntaxTreeBuilder;
+import com.yalex.automata.dfa.CombinedDfaBuilder;
 import com.yalex.codegen.LetExpander;
 import com.yalex.model.LetDefinition;
 import com.yalex.model.Rule;
@@ -20,6 +16,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.prefs.Preferences;
 
@@ -113,7 +110,7 @@ public class YalexController {
         new SwingWorker<Void, Void>() {
             private Path outPath;
             private String generatedSource;
-            private String diagramText;
+            private DfaGraphPanel graphPanel;
 
             @Override
             protected Void doInBackground() {
@@ -125,7 +122,7 @@ public class YalexController {
 
                     Main.runGeneration(inPath, outPath);
                     generatedSource = Files.readString(outPath);
-                    diagramText = buildStateDiagramFromYal(Files.readString(inPath));
+                    graphPanel = buildCombinedDfaGraph(Files.readString(inPath));
                 } catch (IllegalArgumentException ex) {
                     System.err.println("\n[ERROR DE COMPILACIÓN O SINTAXIS]");
                     System.err.println(ex.getMessage());
@@ -141,9 +138,8 @@ public class YalexController {
                 if (generatedSource != null && outPath != null) {
                     view.showGeneratedPythonTab(outPath.getFileName().toString(), generatedSource);
                 }
-                if (diagramText != null && outPath != null) {
-                    String diagramTabName = outPath.getFileName().toString().replaceFirst("\\.py$", "") + ".dfa.txt";
-                    view.showDiagramTab(diagramTabName, diagramText);
+                if (graphPanel != null) {
+                    view.showDfaGraphTab("Lexer DFA", graphPanel);
                 }
                 System.out.println("\n> Terminal process finished.");
                 view.getRunBtn().setEnabled(true);
@@ -183,71 +179,41 @@ public class YalexController {
         });
     }
 
-    private String buildStateDiagramFromYal(String yalSource) {
+    /**
+     * Construye el DFA combinado del lexer y crea el panel gráfico interactivo.
+     */
+    private DfaGraphPanel buildCombinedDfaGraph(String yalSource) {
         YalFile yal = new YalParser().parse(yalSource);
         List<LetDefinition> lets = yal.getLetDefinitions();
         if (yal.getRuleSets().isEmpty()) {
-            return "No hay bloques rule para construir diagrama.";
+            throw new IllegalArgumentException("No hay bloques rule para construir DFA.");
         }
 
         RuleSet rs = yal.getRuleSets().get(0);
-        StringBuilder sb = new StringBuilder();
-        sb.append("State Transition Diagram (textual)\n");
-        sb.append("Rule set: ").append(rs.getName()).append("\n\n");
-
         List<Rule> rules = rs.getRules();
-        for (int i = 0; i < rules.size(); i++) {
-            Rule rule = rules.get(i);
+
+        List<RegexNode> asts = new ArrayList<>();
+        List<String> patterns = new ArrayList<>();
+
+        for (Rule rule : rules) {
             String expanded = LetExpander.apply(rule.getPattern().trim(), lets);
             if (expanded.equalsIgnoreCase("eof")) {
                 continue;
             }
-
-            RegexNode ast = RegexParser.parse(expanded);
-            SyntaxTree tree = SyntaxTreeBuilder.build(ast);
-            DFA dfa = DFAMinimizer.minimize(DirectDfaBuilder.build(tree));
-
-            sb.append("Rule #").append(i).append(": ").append(rule.getPattern()).append("\n");
-            sb.append("Initial state: q").append(dfa.getInitialStateId()).append("\n");
-            sb.append("States:\n");
-            for (int s = 0; s < dfa.getStateCount(); s++) {
-                boolean isInitial = s == dfa.getInitialStateId();
-                boolean isAccept = dfa.getState(s).isAccepting();
-                sb.append("  q").append(s);
-                if (isInitial) {
-                    sb.append(" [start]");
-                }
-                if (isAccept) {
-                    sb.append(" [accept]");
-                }
-                sb.append("\n");
-            }
-
-            sb.append("Transitions:\n");
-            for (var fromEntry : dfa.getTransitionTable().entrySet()) {
-                int from = fromEntry.getKey();
-                for (var tr : fromEntry.getValue().entrySet()) {
-                    char symbol = tr.getKey();
-                    int to = tr.getValue();
-                    sb.append("  q").append(from)
-                            .append(" -- ").append(printableSymbol(symbol))
-                            .append(" --> q").append(to)
-                            .append("\n");
-                }
-            }
-            sb.append("\n");
+            asts.add(RegexParser.parse(expanded));
+            patterns.add(rule.getPattern().trim());
         }
 
-        return sb.toString().trim();
-    }
+        if (asts.isEmpty()) {
+            throw new IllegalArgumentException("No hay reglas no-EOF para construir DFA.");
+        }
 
-    private String printableSymbol(char c) {
-        return switch (c) {
-            case '\n' -> "\\n";
-            case '\t' -> "\\t";
-            case '\r' -> "\\r";
-            case ' ' -> "<space>";
-            default -> String.valueOf(c);
-        };
+        CombinedDfaBuilder.Result result = CombinedDfaBuilder.build(asts, patterns);
+
+        System.out.println("Combined DFA: " + result.dfa().getStateCount() + " estados, "
+                + result.dfa().getAlphabet().size() + " símbolos en el alfabeto");
+
+        return new DfaGraphPanel(result);
     }
 }
+

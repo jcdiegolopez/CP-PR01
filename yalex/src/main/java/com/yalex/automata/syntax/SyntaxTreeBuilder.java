@@ -63,6 +63,16 @@ public class SyntaxTreeBuilder {
         return node instanceof EpsilonNode;
     }
 
+    /**
+     * Expande un AST de regex, reemplazando nodos derivados (Plus, Optional,
+     * Wildcard, EpsilonRegexNode) por sus equivalentes primitivos.
+     *
+     * <p>Útil para construir árboles combinados fuera de {@link #build(RegexNode)}.
+     */
+    public static RegexNode expandAst(RegexNode node) {
+        return new SyntaxTreeBuilder().expand(node);
+    }
+
     // =========================================================================
     // Punto de entrada estático
     // =========================================================================
