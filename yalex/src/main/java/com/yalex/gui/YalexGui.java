@@ -203,7 +203,18 @@ public class YalexGui extends JFrame {
         getContentPane().add(statusBar, BorderLayout.SOUTH);
     }
 
+    public void closeGeneratedTabs() {
+        for (int i = editorTabs.getTabCount() - 1; i >= 0; i--) {
+            String title = editorTabs.getTitleAt(i);
+            if (title != null && (title.startsWith("py:") || title.startsWith("dfagraph:") || title.startsWith("dfa:"))) {
+                editorTabs.removeTabAt(i);
+            }
+        }
+        refreshTabContrast();
+    }
+
     public void openYalTab(String fileName, String content) {
+        closeGeneratedTabs();
         if (yalEditorArea == null) {
             yalEditorArea = createEditableArea();
             removeWelcomeTabIfPresent();
