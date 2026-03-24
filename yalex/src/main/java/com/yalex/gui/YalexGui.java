@@ -2,6 +2,7 @@ package com.yalex.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -45,6 +46,10 @@ public class YalexGui extends JFrame {
 
     private JTextArea yalEditorArea;
     private String yalTabTitle = "untitled.yal";
+
+    private JTextArea lexerTestInputArea;
+    private JTextArea lexerTestOutputArea;
+    private JButton lexerTestRunBtn;
 
     public YalexGui() {
         super("YALex - Visual Studio Code");
@@ -138,6 +143,7 @@ public class YalexGui extends JFrame {
         editorTabs.addTab("welcome", wrappedArea(createReadonlyArea(
                 "\n  // Haz clic en 'Open Folder / .yal' para cargar un archivo en el editor...\n")));
         setStyledTabTitle(editorTabs.getTabCount() - 1, "welcome");
+        addLexerTestTab();
         refreshTabContrast();
 
         editorPanel.add(tabsBar, BorderLayout.NORTH);
@@ -329,12 +335,97 @@ public class YalexGui extends JFrame {
 
     private int findTabIndexByComponent(JTextArea area) {
         for (int i = 0; i < editorTabs.getTabCount(); i++) {
-            JScrollPane pane = (JScrollPane) editorTabs.getComponentAt(i);
+            Component c = editorTabs.getComponentAt(i);
+            if (!(c instanceof JScrollPane pane)) {
+                continue;
+            }
             if (pane.getViewport().getView() == area) {
                 return i;
             }
         }
         return -1;
+    }
+
+    private void addLexerTestTab() {
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(BG_EDITOR);
+        root.putClientProperty("yalex.tabId", "lexerTest");
+
+        JPanel north = new JPanel(new BorderLayout());
+        north.setBackground(BG_TABS);
+        north.setBorder(new EmptyBorder(8, 10, 8, 10));
+
+        JLabel hint = new JLabel("Probar lexer — escribe el texto de entrada (stdin)");
+        hint.setForeground(FG_TEXT);
+        hint.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+
+        lexerTestRunBtn = new JButton("Ejecutar lexer  \u25B6");
+        lexerTestRunBtn.setToolTipText("Ejecuta tokenize_all() sobre el .py generado con Run (última compilación exitosa)");
+        lexerTestRunBtn.setUI(new BasicButtonUI());
+        lexerTestRunBtn.setBackground(RUN_GREEN);
+        lexerTestRunBtn.setForeground(Color.WHITE);
+        lexerTestRunBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lexerTestRunBtn.setOpaque(true);
+        lexerTestRunBtn.setBorder(new EmptyBorder(8, 14, 8, 14));
+        lexerTestRunBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnRow.setOpaque(false);
+        btnRow.add(lexerTestRunBtn);
+
+        north.add(hint, BorderLayout.WEST);
+        north.add(btnRow, BorderLayout.EAST);
+
+        lexerTestInputArea = createEditableArea();
+        lexerTestInputArea.setText("");
+        lexerTestOutputArea = createReadonlyArea("");
+        lexerTestOutputArea.setEditable(false);
+
+        JPanel top = new JPanel(new BorderLayout());
+        top.setOpaque(false);
+        top.setBackground(BG_EDITOR);
+        JLabel inLabel = new JLabel("Entrada");
+        inLabel.setForeground(FG_TEXT);
+        inLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        inLabel.setBorder(new EmptyBorder(0, 2, 4, 0));
+        top.add(inLabel, BorderLayout.NORTH);
+        top.add(wrappedArea(lexerTestInputArea), BorderLayout.CENTER);
+
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.setOpaque(false);
+        bottom.setBackground(BG_EDITOR);
+        JLabel outLabel = new JLabel("Salida (stdout / stderr)");
+        outLabel.setForeground(FG_TEXT);
+        outLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        outLabel.setBorder(new EmptyBorder(0, 2, 4, 0));
+        bottom.add(outLabel, BorderLayout.NORTH);
+        bottom.add(wrappedArea(lexerTestOutputArea), BorderLayout.CENTER);
+
+        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, top, bottom);
+        split.setResizeWeight(0.45);
+        split.setDividerSize(4);
+        split.setBorder(null);
+        split.setBackground(BG_EDITOR);
+
+        root.add(north, BorderLayout.NORTH);
+        root.add(split, BorderLayout.CENTER);
+
+        editorTabs.addTab("Probar lexer", root);
+        setStyledTabTitle(editorTabs.getTabCount() - 1, "Probar lexer");
+    }
+
+    /**
+     * Selecciona la pestaña donde se prueba el lexer generado.
+     */
+    public void selectLexerTestTab() {
+        for (int i = 0; i < editorTabs.getTabCount(); i++) {
+            Component c = editorTabs.getComponentAt(i);
+            if (c instanceof JPanel p && "lexerTest".equals(p.getClientProperty("yalex.tabId"))) {
+                editorTabs.setSelectedIndex(i);
+                refreshTabContrast();
+                return;
+            }
+        }
     }
 
     private JTextArea createEditableArea() {
@@ -380,5 +471,17 @@ public class YalexGui extends JFrame {
 
     public JLabel getStatusLabel() {
         return statusLabel;
+    }
+
+    public JButton getLexerTestRunBtn() {
+        return lexerTestRunBtn;
+    }
+
+    public JTextArea getLexerTestInputArea() {
+        return lexerTestInputArea;
+    }
+
+    public JTextArea getLexerTestOutputArea() {
+        return lexerTestOutputArea;
     }
 }

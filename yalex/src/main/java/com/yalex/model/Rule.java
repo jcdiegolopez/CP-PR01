@@ -13,9 +13,7 @@ public class Rule {
         if (this.pattern.isEmpty()) {
             throw new IllegalArgumentException("pattern no puede estar vacio");
         }
-        if (this.action.isEmpty()) {
-            throw new IllegalArgumentException("action no puede estar vacia");
-        }
+        // {} vacío en el .yal es válido: ignorar token (el codegen emite `pass` en Python).
     }
 
     public String getPattern() {

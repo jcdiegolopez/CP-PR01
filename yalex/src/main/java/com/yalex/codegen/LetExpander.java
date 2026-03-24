@@ -3,8 +3,6 @@ package com.yalex.codegen;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.yalex.model.LetDefinition;
 
@@ -66,14 +64,47 @@ public final class LetExpander {
 
     /**
      * Reemplaza {@code name} como identificador completo (no parte de otro nombre).
+     * Equivalente a {@code (?<![A-Za-z0-9_])name(?![A-Za-z0-9_])} sin usar {@code java.util.regex}.
      */
     static String replaceIdentifier(String text, String name, String replacement) {
         if (name.isEmpty()) {
             return text;
         }
-        String quoted = Pattern.quote(name);
-        Pattern p = Pattern.compile("(?<![A-Za-z0-9_])" + quoted + "(?![A-Za-z0-9_])");
-        Matcher m = p.matcher(text);
-        return m.replaceAll(Matcher.quoteReplacement(replacement));
+        int n = name.length();
+        if (text.length() < n) {
+            return text;
+        }
+        StringBuilder sb = new StringBuilder(text.length() + replacement.length() * 4);
+        int i = 0;
+        while (i <= text.length() - n) {
+            int idx = text.indexOf(name, i);
+            if (idx < 0) {
+                sb.append(text, i, text.length());
+                return sb.toString();
+            }
+            if (isBoundariedOccurrence(text, idx, n)) {
+                sb.append(text, i, idx);
+                sb.append(replacement);
+                i = idx + n;
+            } else {
+                sb.append(text, i, idx + 1);
+                i = idx + 1;
+            }
+        }
+        sb.append(text, i, text.length());
+        return sb.toString();
+    }
+
+    /** Mismo criterio que [A-Za-z0-9_] en los lookaround del patrón anterior. */
+    private static boolean isAsciiIdentChar(char c) {
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
+    }
+
+    private static boolean isBoundariedOccurrence(String text, int start, int len) {
+        if (start > 0 && isAsciiIdentChar(text.charAt(start - 1))) {
+            return false;
+        }
+        int after = start + len;
+        return after >= text.length() || !isAsciiIdentChar(text.charAt(after));
     }
 }

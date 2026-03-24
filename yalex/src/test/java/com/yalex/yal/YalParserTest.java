@@ -1,12 +1,11 @@
 package com.yalex.yal;
 
+import java.nio.file.Path;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.nio.file.Path;
-
 import org.junit.jupiter.api.Test;
 
 import com.yalex.model.RuleSet;
@@ -50,6 +49,17 @@ public class YalParserTest {
         String source = "(* comentario sin cierre";
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> new YalParser().parse(source));
         assertTrue(ex.getMessage().contains("comentario sin cierre"));
+    }
+
+    @Test
+    void allowsEmptyActionBlockForSkipRules() {
+        String source = """
+            rule skip =
+              ' ' {}
+            """;
+
+        YalFile yal = new YalParser().parse(source);
+        assertEquals("", yal.getRuleSets().get(0).getRules().get(0).getAction());
     }
 
     @Test

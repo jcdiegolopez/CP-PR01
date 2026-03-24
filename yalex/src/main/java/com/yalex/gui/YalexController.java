@@ -35,6 +35,8 @@ public class YalexController {
     private final Preferences prefs;
     private static final String LAST_DIR_PREF = "LAST_DIR_PREF";
     private File currentFile = null;
+    /** Ruta del último {@code .py} generado con éxito (Run); se usa en "Probar lexer". */
+    private Path lastGeneratedLexerPath = null;
     private boolean suppressDirtyEvents = false;
 
     public YalexController(YalexGui view) {
@@ -49,6 +51,7 @@ public class YalexController {
 
         view.getOpenFileBtn().addActionListener(this::openFile);
         view.getRunBtn().addActionListener(this::runBuildTask);
+        view.getLexerTestRunBtn().addActionListener(this::runLexerTest);
     }
 
     private void openFile(ActionEvent e) {
@@ -68,6 +71,7 @@ public class YalexController {
 
     private void loadFile(File file) {
         this.currentFile = file;
+        this.lastGeneratedLexerPath = null;
         view.getStatusLabel().setText(" " + file.getName() + "       UTF-8    YALex");
 
         try {
@@ -136,6 +140,7 @@ public class YalexController {
             @Override
             protected void done() {
                 if (generatedSource != null && outPath != null) {
+                    lastGeneratedLexerPath = outPath;
                     view.showGeneratedPythonTab(outPath.getFileName().toString(), generatedSource);
                 }
                 if (graphPanel != null) {
@@ -145,6 +150,66 @@ public class YalexController {
                 view.getRunBtn().setEnabled(true);
             }
         }.execute();
+    }
+
+    private void runLexerTest(ActionEvent e) {
+        if (lastGeneratedLexerPath == null || !Files.isRegularFile(lastGeneratedLexerPath)) {
+            view.getLexerTestOutputArea().setText(
+                    "No hay un lexer generado para el archivo actual.\n"
+                            + "Abre un .yal, pulsa Run y espera a que la compilación termine sin errores.\n");
+            view.selectLexerTestTab();
+            return;
+        }
+
+        final String input = view.getLexerTestInputArea().getText();
+        view.getLexerTestRunBtn().setEnabled(false);
+
+        new SwingWorker<LexerTestRunner.Result, Void>() {
+            @Override
+            protected LexerTestRunner.Result doInBackground() throws Exception {
+                return LexerTestRunner.run(lastGeneratedLexerPath, input);
+            }
+
+            @Override
+            protected void done() {
+                view.getLexerTestRunBtn().setEnabled(true);
+                try {
+                    LexerTestRunner.Result r = get();
+                    String text = formatLexerRunOutput(r);
+                    view.getLexerTestOutputArea().setText(text);
+                } catch (Exception ex) {
+                    Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                    view.getLexerTestOutputArea().setText(
+                            "Error al ejecutar el lexer:\n"
+                                    + cause.getClass().getSimpleName() + ": " + cause.getMessage());
+                }
+                view.selectLexerTestTab();
+            }
+        }.execute();
+    }
+
+    private static String formatLexerRunOutput(LexerTestRunner.Result r) {
+        if (r.isPythonMissing()) {
+            return r.stderr();
+        }
+        StringBuilder sb = new StringBuilder();
+        String out = r.stdout();
+        String err = r.stderr();
+        if (out != null && !out.isEmpty()) {
+            sb.append(out);
+        }
+        if (err != null && !err.isEmpty()) {
+            if (sb.length() > 0) {
+                sb.append("\n");
+            }
+            sb.append("--- stderr ---\n").append(err);
+        }
+        if (sb.length() == 0) {
+            sb.append("(sin salida en stdout/stderr; código de salida ").append(r.exitCode()).append(")");
+        } else if (r.exitCode() != 0) {
+            sb.append("\n--- código de salida: ").append(r.exitCode()).append(" ---");
+        }
+        return sb.toString();
     }
 
     private void installDirtyTrackingIfNeeded() {

@@ -163,9 +163,7 @@ public class YalParser {
         }
         int actionClose = findMatchingBrace(source, actionOpen);
         String action = source.substring(actionOpen + 1, actionClose).trim();
-        if (action.isEmpty()) {
-            throw new IllegalArgumentException("accion vacia en alternativa");
-        }
+        // {} vacío es válido: “no hacer nada” (p. ej. ignorar espacios); el codegen emite `pass`.
         return new ParsedRule(new Rule(pattern, action), actionClose + 1);
     }
 

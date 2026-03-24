@@ -132,7 +132,11 @@ public final class PythonCodeGen {
     private static void emitActions(StringBuilder sb, List<String> actions) {
         for (int i = 0; i < actions.size(); i++) {
             sb.append("def _action_").append(i).append("(lexbuf, lxm):\n");
-            indentAppend(sb, actions.get(i), 4);
+            String body = actions.get(i).trim();
+            if (body.isEmpty()) {
+                body = "pass";
+            }
+            indentAppend(sb, body, 4);
             sb.append("\n\n");
         }
     }

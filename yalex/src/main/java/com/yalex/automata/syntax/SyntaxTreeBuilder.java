@@ -131,10 +131,11 @@ public class SyntaxTreeBuilder {
 
         } else if (node instanceof PlusNode p) {
             // r+ → r · r*
-            // IMPORTANTE: expandir dos veces para obtener dos subárboles independientes.
-            // Compartir el mismo objeto Java generaría IDs de posición duplicados.
-            RegexNode leftChild  = expand(p.getChild());
-            RegexNode rightChild = expand(p.getChild()); // segunda copia independiente
+            // IMPORTANTE: expand() reutiliza hojas idénticas (p.ej. CharClassNode); NullableFirstLast
+            // anota por identidad de nodo, así que la segunda copia debe ser un clon profundo
+            // para que digito+ tenga followpos correcto (varios dígitos seguidos, p.ej. -11).
+            RegexNode leftChild = expand(p.getChild());
+            RegexNode rightChild = deepCopyRegex(leftChild);
             return new ConcatNode(leftChild, new KleeneNode(rightChild));
 
         } else if (node instanceof OptionalNode o) {
@@ -163,6 +164,48 @@ public class SyntaxTreeBuilder {
                 "Nodo de AST desconocido: " + node.getClass().getSimpleName()
                 + ". Las referencias 'let' deben expandirse antes de llamar a SyntaxTreeBuilder.");
         }
+    }
+
+    /**
+     * Copia profunda del AST ya expandido (sin Plus/Optional/Wildcard sin expandir).
+     * Necesaria para {@code r+} → {@code r·r*} con dos subárboles independientes.
+     */
+    private static RegexNode deepCopyRegex(RegexNode node) {
+        Objects.requireNonNull(node, "node");
+        if (node instanceof CharNode cn) {
+            return new CharNode(cn.getValue());
+        }
+        if (node instanceof CharClassNode cc) {
+            return new CharClassNode(new ArrayList<>(cc.getEntries()), cc.isNegated());
+        }
+        if (node instanceof ConcatNode c) {
+            return new ConcatNode(deepCopyRegex(c.getLeft()), deepCopyRegex(c.getRight()));
+        }
+        if (node instanceof AlternNode a) {
+            if (isEpsilonRegex(a.getRight())) {
+                return new AlternNode(deepCopyRegex(a.getLeft()), EpsilonNode.INSTANCE);
+            }
+            return new AlternNode(deepCopyRegex(a.getLeft()), deepCopyRegex(a.getRight()));
+        }
+        if (node instanceof KleeneNode k) {
+            return new KleeneNode(deepCopyRegex(k.getChild()));
+        }
+        if (node instanceof OptionalNode o) {
+            return new OptionalNode(deepCopyRegex(o.getChild()));
+        }
+        if (node instanceof DiffNode d) {
+            return new DiffNode(deepCopyRegex(d.getLeft()), deepCopyRegex(d.getRight()));
+        }
+        if (node instanceof WildcardNode) {
+            return expandWildcard();
+        }
+        if (isEpsilonRegex(node)) {
+            return EpsilonNode.INSTANCE;
+        }
+        if (node instanceof EpsilonRegexNode) {
+            return EpsilonRegexNode.INSTANCE;
+        }
+        throw new IllegalArgumentException("deepCopyRegex: nodo no soportado: " + node.getClass().getName());
     }
 
     /**
