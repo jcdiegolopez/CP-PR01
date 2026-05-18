@@ -1,5 +1,8 @@
 package com.yapar;
 
+import com.yapar.analysis.FirstFollowCalculator;
+import com.yapar.automaton.LR0Automaton;
+import com.yapar.automaton.LR0AutomatonBuilder;
 import com.yapar.bridge.YalexBridge;
 import com.yapar.model.Grammar;
 import com.yapar.model.Production;
@@ -10,7 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Punto de entrada de YAPar.
@@ -54,7 +59,14 @@ public final class YaparMain {
     /**
      * Ejecuta el pipeline completo. Expuesto para pruebas.
      */
-    public static Grammar runPipeline(ParsedCli cli) {
+    /**
+     * Resultado del pipeline completo hasta el final del Workstream B.
+     * Dev 3 (Workstream C) extiende esto con {@code ParseResult} cuando esté listo.
+     */
+    public record PipelineResult(Grammar grammar, LR0Automaton automaton,
+                                  Map<String, Set<String>> followSets) {}
+
+    public static PipelineResult runPipeline(ParsedCli cli) {
         Objects.requireNonNull(cli, "cli no puede ser null");
 
         // ── Paso 1: Parsear .yalp ─────────────────────────────────────────────
@@ -73,15 +85,27 @@ public final class YaparMain {
                 bridge.rulePatterns().size() + " patrón(es) en reglas.");
         }
 
-        // ── Paso 3: Construir Grammar ─────────────────────────────────────────
+        // ── Paso 3: Construir Grammar (Workstream A) ──────────────────────────
         Grammar grammar = Grammar.build(yalpFile);
         printGrammarSummary(grammar);
 
-        // ── Pasos 4-5: Workstreams B y C (pendiente) ─────────────────────────
-        System.out.println("[YAPAR] FIRST/FOLLOW + autómata LR(0) → pendiente (Workstream B).");
+        // ── Paso 4: FIRST/FOLLOW + Autómata LR(0) (Workstream B) ─────────────
+        FirstFollowCalculator calc = new FirstFollowCalculator(grammar);
+        Map<String, Set<String>> followSets = calc.getFollowSets();
+        System.out.println("[YAPAR] Conjuntos FIRST/FOLLOW calculados.");
+        followSets.forEach((nt, set) ->
+            System.out.println("  FOLLOW(" + nt + ") = " + set));
+
+        LR0AutomatonBuilder builder = new LR0AutomatonBuilder(grammar);
+        LR0Automaton automaton = builder.build();
+        System.out.println("[YAPAR] Autómata LR(0): " +
+            automaton.stateCount() + " estados, " +
+            automaton.transitionCount() + " transiciones.");
+
+        // ── Paso 5: Tablas SLR(1) + generación theparser (Workstream C) ───────
         System.out.println("[YAPAR] Tablas SLR(1) + generación theparser → pendiente (Workstream C).");
 
-        return grammar;
+        return new PipelineResult(grammar, automaton, followSets);
     }
 
     private static void printGrammarSummary(Grammar grammar) {
