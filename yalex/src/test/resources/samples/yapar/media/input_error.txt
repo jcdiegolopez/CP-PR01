@@ -1,0 +1,4 @@
+# Gramática media — entrada con ERROR SINTÁCTICO
+# Representa: 3 + * 5   (operador * sin operando izquierdo del lado del término)
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+NUM PLUS TIMES NUM

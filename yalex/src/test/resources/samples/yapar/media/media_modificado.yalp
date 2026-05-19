@@ -1,0 +1,20 @@
+(* Gramática media MODIFICADA: agrega operador módulo al nivel de * y / *)
+
+%token NUM PLUS MINUS TIMES DIVIDE MOD LPAREN RPAREN
+
+%%
+
+E : E PLUS  T { "suma"           }
+  | E MINUS T { "resta"          }
+  | T          { "pasarE"        }
+  ;
+
+T : T TIMES  F { "multiplicacion" }
+  | T DIVIDE F { "division"       }
+  | T MOD    F { "modulo"         }
+  | F          { "pasarT"         }
+  ;
+
+F : LPAREN E RPAREN { "agrupacion" }
+  | NUM              { "numero"    }
+  ;

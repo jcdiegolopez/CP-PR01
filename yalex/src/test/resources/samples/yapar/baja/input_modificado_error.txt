@@ -1,0 +1,4 @@
+# Gramática baja MODIFICADA — entrada con ERROR SINTÁCTICO
+# Representa: * 5   (operador sin operando izquierdo)
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+TIMES NUM

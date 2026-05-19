@@ -1,0 +1,62 @@
+(* Gramática alta MODIFICADA: agrega FOR y PRINT al lenguaje imperativo *)
+
+%token ID INT FLOAT
+%token PLUS MINUS TIMES DIVIDE
+%token EQ NEQ LT LE GT GE AND OR NOT
+%token ASSIGN LPAREN RPAREN LBRACE RBRACE SEMICOLON
+%token IF ELSE WHILE RETURN FOR TO PRINT
+
+%%
+
+Program : StmtList { "programa" }
+        ;
+
+StmtList : StmtList Stmt { "lista_stmts" }
+         | Stmt           { "stmt_unico"  }
+         ;
+
+Stmt : AssignStmt  { "stmt_asignacion" }
+     | IfStmt      { "stmt_if"         }
+     | WhileStmt   { "stmt_while"      }
+     | ReturnStmt  { "stmt_return"     }
+     | ForStmt     { "stmt_for"        }
+     | PrintStmt   { "stmt_print"      }
+     ;
+
+AssignStmt : ID ASSIGN Expr SEMICOLON { "asignar" }
+           ;
+
+IfStmt : IF LPAREN Expr RPAREN LBRACE StmtList RBRACE
+             { "si_sin_else" }
+       | IF LPAREN Expr RPAREN LBRACE StmtList RBRACE
+             ELSE LBRACE StmtList RBRACE
+             { "si_con_else" }
+       ;
+
+WhileStmt : WHILE LPAREN Expr RPAREN LBRACE StmtList RBRACE { "mientras" }
+          ;
+
+ReturnStmt : RETURN Expr SEMICOLON { "retornar" }
+           ;
+
+ForStmt : FOR ID ASSIGN Expr TO Expr LBRACE StmtList RBRACE { "para" }
+        ;
+
+PrintStmt : PRINT LPAREN Expr RPAREN SEMICOLON { "imprimir" }
+          ;
+
+Expr : Expr PLUS  Term { "suma"       }
+     | Expr MINUS Term { "resta"      }
+     | Term             { "pasarExpr" }
+     ;
+
+Term : Term TIMES  Factor { "multiplicar" }
+     | Term DIVIDE Factor { "dividir"     }
+     | Factor              { "pasarTerm"  }
+     ;
+
+Factor : LPAREN Expr RPAREN { "agrupar"       }
+       | ID                  { "identificador" }
+       | INT                 { "entero"        }
+       | FLOAT               { "flotante"      }
+       ;

@@ -1,0 +1,4 @@
+# Gramática alta MODIFICADA — entrada con ERROR SINTÁCTICO
+# Representa: for i to 10 { }  (falta "= expr" después del ID, y bloque vacío)
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+FOR ID TO INT LBRACE ID ASSIGN INT SEMICOLON RBRACE

@@ -1,0 +1,4 @@
+# Gramática baja — entrada con ERROR SINTÁCTICO
+# Representa: 3 + + 5  (dos operadores consecutivos, sin operando intermedio)
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+NUM PLUS PLUS NUM

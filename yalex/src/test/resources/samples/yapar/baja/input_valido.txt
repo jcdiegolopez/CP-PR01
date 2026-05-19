@@ -1,0 +1,4 @@
+# Gramática baja — entrada VÁLIDA
+# Representa: 3 + 5 - 2
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+NUM PLUS NUM MINUS NUM

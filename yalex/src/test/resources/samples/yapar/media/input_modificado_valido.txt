@@ -1,0 +1,4 @@
+# Gramática media MODIFICADA — entrada VÁLIDA
+# Representa: 10 MOD 3 + (4 * 2)   (módulo y precedencia combinados)
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+NUM MOD NUM PLUS LPAREN NUM TIMES NUM RPAREN
