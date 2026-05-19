@@ -1,0 +1,6 @@
+# Gramática alta MODIFICADA — entrada VÁLIDA
+# Representa:
+#   for i = 1 to 10 { print(i); }
+#   return i;
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+FOR ID ASSIGN INT TO INT LBRACE PRINT LPAREN ID RPAREN SEMICOLON RBRACE RETURN ID SEMICOLON

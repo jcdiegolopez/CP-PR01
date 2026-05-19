@@ -1,0 +1,5 @@
+# Gramática baja MODIFICADA — entrada VÁLIDA
+# Representa: 2 + 3 * 4   (la multiplicación tiene mayor precedencia)
+# El parser agrupa como: 2 + (3 * 4) gracias a la jerarquía E→T→F
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+NUM PLUS NUM TIMES NUM

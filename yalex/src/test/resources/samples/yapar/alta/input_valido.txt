@@ -1,0 +1,8 @@
+# Gramática alta — entrada VÁLIDA
+# Representa:
+#   x = 5;
+#   if (x) { y = x + 1; } else { y = 0; }
+#   while (y) { y = y - 1; }
+#   return y;
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+ID ASSIGN INT SEMICOLON IF LPAREN ID RPAREN LBRACE ID ASSIGN ID PLUS INT SEMICOLON RBRACE ELSE LBRACE ID ASSIGN INT SEMICOLON RBRACE WHILE LPAREN ID RPAREN LBRACE ID ASSIGN ID MINUS INT SEMICOLON RBRACE RETURN ID SEMICOLON

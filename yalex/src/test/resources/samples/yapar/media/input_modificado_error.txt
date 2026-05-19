@@ -1,0 +1,4 @@
+# Gramática media MODIFICADA — entrada con ERROR SINTÁCTICO
+# Representa: 5 MOD MOD 3   (dos operadores módulo consecutivos)
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+NUM MOD MOD NUM

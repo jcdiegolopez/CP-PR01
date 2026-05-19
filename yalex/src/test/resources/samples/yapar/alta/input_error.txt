@@ -1,0 +1,4 @@
+# Gramática alta — entrada con ERROR SINTÁCTICO
+# Representa: x = ;   (falta la expresión en la asignación)
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+ID ASSIGN SEMICOLON

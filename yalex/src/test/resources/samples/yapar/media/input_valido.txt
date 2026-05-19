@@ -1,0 +1,4 @@
+# Gramática media — entrada VÁLIDA
+# Representa: (3 + 5) * 2   (paréntesis fuerzan suma antes de multiplicación)
+# Secuencia de tokens (pegar en pestaña "Probar gramática"):
+LPAREN NUM PLUS NUM RPAREN TIMES NUM

@@ -1,0 +1,17 @@
+(* Gramática baja MODIFICADA: agrega multiplicación con precedencia correcta *)
+
+%token NUM PLUS MINUS TIMES
+
+%%
+
+E : E PLUS  T { "suma"           }
+  | E MINUS T { "resta"          }
+  | T          { "pasarE"        }
+  ;
+
+T : T TIMES F { "multiplicacion" }
+  | F          { "pasarT"        }
+  ;
+
+F : NUM        { "numero"        }
+  ;
