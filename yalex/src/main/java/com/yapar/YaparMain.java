@@ -4,8 +4,12 @@ import com.yapar.analysis.FirstFollowCalculator;
 import com.yapar.automaton.LR0Automaton;
 import com.yapar.automaton.LR0AutomatonBuilder;
 import com.yapar.bridge.YalexBridge;
+import com.yapar.codegen.ParserCodeGen;
 import com.yapar.model.Grammar;
 import com.yapar.model.Production;
+import com.yapar.tables.ConflictDetector;
+import com.yapar.tables.ParseResult;
+import com.yapar.tables.SLRTableBuilder;
 import com.yapar.yalp.YalpFile;
 import com.yapar.yalp.YalpParser;
 
@@ -64,7 +68,8 @@ public final class YaparMain {
      * Dev 3 (Workstream C) extiende esto con {@code ParseResult} cuando esté listo.
      */
     public record PipelineResult(Grammar grammar, LR0Automaton automaton,
-                                  Map<String, Set<String>> followSets) {}
+                                  Map<String, Set<String>> followSets,
+                                  ParseResult parseResult) {}
 
     public static PipelineResult runPipeline(ParsedCli cli) {
         Objects.requireNonNull(cli, "cli no puede ser null");
@@ -102,10 +107,20 @@ public final class YaparMain {
             automaton.stateCount() + " estados, " +
             automaton.transitionCount() + " transiciones.");
 
-        // ── Paso 5: Tablas SLR(1) + generación theparser (Workstream C) ───────
-        System.out.println("[YAPAR] Tablas SLR(1) + generación theparser → pendiente (Workstream C).");
+        // ── Paso 5: Tablas SLR(1) (Workstream C) ─────────────────────────────
+        SLRTableBuilder slrBuilder = new SLRTableBuilder(automaton, followSets);
+        ParseResult parseResult = slrBuilder.build();
 
-        return new PipelineResult(grammar, automaton, followSets);
+        ConflictDetector.report(parseResult.conflicts());
+
+        System.out.println("[YAPAR] Tabla SLR(1): " +
+            parseResult.conflicts().size() + " conflicto(s).");
+
+        // ── Paso 6: Generación de theparser.py (Workstream C) ─────────────────
+        ParserCodeGen.generate(parseResult, grammar, automaton, cli.output());
+        System.out.println("[YAPAR] Parser generado: " + cli.output().getFileName());
+
+        return new PipelineResult(grammar, automaton, followSets, parseResult);
     }
 
     private static void printGrammarSummary(Grammar grammar) {

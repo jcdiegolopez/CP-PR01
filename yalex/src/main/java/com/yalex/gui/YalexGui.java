@@ -1,5 +1,7 @@
 package com.yalex.gui;
 
+import com.yapar.gui.YaparPanel;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -144,6 +146,7 @@ public class YalexGui extends JFrame {
                 "\n  // Haz clic en 'Open Folder / .yal' para cargar un archivo en el editor...\n")));
         setStyledTabTitle(editorTabs.getTabCount() - 1, "welcome");
         addLexerTestTab();
+        addYaparTab();
         refreshTabContrast();
 
         editorPanel.add(tabsBar, BorderLayout.NORTH);
@@ -494,5 +497,23 @@ public class YalexGui extends JFrame {
 
     public JTextArea getLexerTestOutputArea() {
         return lexerTestOutputArea;
+    }
+
+    private void addYaparTab() {
+        YaparPanel panel = new YaparPanel();
+        editorTabs.addTab("YAPar", panel);
+        setStyledTabTitle(editorTabs.getTabCount() - 1, "YAPar");
+    }
+
+    /** Selecciona la pestaña YAPar. */
+    public void selectYaparTab() {
+        for (int i = 0; i < editorTabs.getTabCount(); i++) {
+            Component c = editorTabs.getComponentAt(i);
+            if (c instanceof YaparPanel) {
+                editorTabs.setSelectedIndex(i);
+                refreshTabContrast();
+                return;
+            }
+        }
     }
 }

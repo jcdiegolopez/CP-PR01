@@ -141,11 +141,9 @@ public class YalexController {
             protected void done() {
                 if (generatedSource != null && outPath != null) {
                     lastGeneratedLexerPath = outPath;
-                    view.showGeneratedPythonTab(outPath.getFileName().toString(), generatedSource);
+                    // tab de código .py oculta — se genera en disco pero no se muestra
                 }
-                if (graphPanel != null) {
-                    view.showDfaGraphTab("Lexer DFA", graphPanel);
-                }
+                // tab DFA oculta — ya no es necesaria en la UI
                 System.out.println("\n> Terminal process finished.");
                 view.getRunBtn().setEnabled(true);
             }
