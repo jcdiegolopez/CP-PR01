@@ -1,0 +1,19 @@
+(* Gramática de complejidad media: expresiones aritméticas completas *)
+
+%token NUM PLUS MINUS TIMES DIVIDE LPAREN RPAREN
+
+%%
+
+E : E PLUS  T { "suma" }
+  | E MINUS T { "resta" }
+  | T          { "pasarE" }
+  ;
+
+T : T TIMES  F { "multiplicacion" }
+  | T DIVIDE F { "division" }
+  | F           { "pasarT" }
+  ;
+
+F : LPAREN E RPAREN { "agrupacion" }
+  | NUM              { "numero" }
+  ;

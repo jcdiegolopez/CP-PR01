@@ -1,0 +1,13 @@
+(* Gramática de complejidad baja: suma y resta de números *)
+
+%token NUM PLUS MINUS
+
+%%
+
+E : E PLUS  T { "suma" }
+  | E MINUS T { "resta" }
+  | T          { "pasar" }
+  ;
+
+T : NUM { "numero" }
+  ;
